@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.15)
-project(WebhookDispatcher C)
+cmake_minimum_required(VERSION 3.10)
+project(C-Webhook-Dispatcher)
 set(CMAKE_C_STANDARD 11)
-add_executable(webhook_dispatcher main.c)
+add_executable(app src/main.c)
+add_executable(test_app tests/test_main.c)
