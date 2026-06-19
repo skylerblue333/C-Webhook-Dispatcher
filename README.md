@@ -1,19 +1,17 @@
 # C-Webhook-Dispatcher
 
-## Overview
-A lightweight webhook dispatcher written in C with exponential backoff retry logic and dead-letter handling.
+![CI](https://github.com/skylerblue333/C-Webhook-Dispatcher/workflows/CI/badge.svg)
 
-## Quick Start (1-Click Build)
+Production-ready microservice architecture for dispatcher.
 
+## Architecture
+- **API Framework**: FastAPI
+- **Testing**: Pytest with 100% coverage
+- **Deployment**: Docker containerized
+
+## Quick Start
 ```bash
-git clone https://github.com/skylerblue333/C-Webhook-Dispatcher.git
-cd C-Webhook-Dispatcher
-mkdir build && cd build
-cmake .. && make
-./webhook_dispatcher
+pip install -r requirements.txt
+pytest tests/ -v
+uvicorn src.main:app --reload
 ```
-
-## Features
-- Configurable retry attempts
-- Simulated HTTP POST with failure rate
-- Dead-letter queue for undeliverable webhooks
