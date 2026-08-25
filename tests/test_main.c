@@ -1,36 +1,53 @@
-#include <stdio.h>
+#include "webhook_plan.h"
+
 #include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
-#define MAX_ITEMS 1024
+int main(void) {
+    sky_webhook_plan plan;
+    sky_webhook_result result;
+    char oversized_payload[SKY_WEBHOOK_PAYLOAD_MAX + 2U];
 
-typedef struct {
-    char key[64];
-    int value;
-} Item;
+    result = sky_webhook_plan_init(
+        &plan,
+        "https://hooks.example.test/events",
+        "order.created",
+        "{\"id\":1}",
+        5U,
+        500U
+    );
+    assert(result == SKY_WEBHOOK_OK);
+    assert(strcmp(plan.event, "order.created") == 0);
+    assert(plan.payload_len == strlen("{\"id\":1}"));
+    assert(sky_webhook_retry_delay_ms(&plan, 0U) == 0U);
+    assert(sky_webhook_retry_delay_ms(&plan, 1U) == 500U);
+    assert(sky_webhook_retry_delay_ms(&plan, 2U) == 1000U);
+    assert(sky_webhook_retry_delay_ms(&plan, 4U) == 4000U);
+    assert(sky_webhook_retry_delay_ms(&plan, 5U) == UINT32_MAX);
 
-Item store[MAX_ITEMS];
-int store_size = 0;
+    assert(sky_webhook_plan_init(&plan, "http://example.test", "event", "{}", 3U, 100U)
+           == SKY_WEBHOOK_INVALID_URL);
+    assert(sky_webhook_plan_init(&plan, "https://example.test", "bad event", "{}", 3U, 100U)
+           == SKY_WEBHOOK_INVALID_EVENT);
+    assert(sky_webhook_plan_init(&plan, "https://example.test", "event", "", 3U, 100U)
+           == SKY_WEBHOOK_INVALID_PAYLOAD);
+    assert(sky_webhook_plan_init(&plan, "https://example.test", "event", "{}", 0U, 100U)
+           == SKY_WEBHOOK_INVALID_RETRY_POLICY);
+    assert(sky_webhook_plan_init(&plan, "https://example.test", "event", "{}", 9U, 100U)
+           == SKY_WEBHOOK_INVALID_RETRY_POLICY);
 
-int add_item(const char* key, int value) {
-    if (store_size >= MAX_ITEMS) return -1;
-    strncpy(store[store_size].key, key, 63);
-    store[store_size].value = value;
-    store_size++;
-    return store_size - 1;
-}
+    memset(oversized_payload, 'x', sizeof(oversized_payload));
+    oversized_payload[sizeof(oversized_payload) - 1U] = '\0';
+    assert(sky_webhook_plan_init(&plan, "https://example.test", "event", oversized_payload, 3U, 100U)
+           == SKY_WEBHOOK_INVALID_PAYLOAD);
 
-int find_item(const char* key) {
-    for (int i = 0; i < store_size; i++) {
-        if (strcmp(store[i].key, key) == 0) return store[i].value;
-    }
-    return -1;
-}
+    assert(sky_webhook_plan_init(&plan, "https://example.test", "event", "{}", 8U, 60000U)
+           == SKY_WEBHOOK_OK);
+    assert(sky_webhook_retry_delay_ms(&plan, 4U) == SKY_WEBHOOK_MAX_DELAY_MS);
+    assert(sky_webhook_retry_delay_ms(&plan, 7U) == SKY_WEBHOOK_MAX_DELAY_MS);
 
-int main() {
-    add_item("test_key", 42);
-    assert(find_item("test_key") == 42);
-    assert(find_item("missing") == -1);
-    printf("All tests passed!\n");
+    puts("all webhook plan tests passed");
     return 0;
 }
