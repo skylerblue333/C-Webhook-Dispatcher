@@ -1,9 +1,32 @@
-name: CI
-on: [push, pull_request]
+name: webhook-plan-ci
+
+on:
+  push:
+    branches: [main, "product/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: gcc -o app src/main.c && echo 'Build OK'
-      - run: gcc -o test_app tests/test_main.c && ./test_app
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build with warnings as errors
+        run: cmake --build build --parallel 2
+      - name: Tests
+        run: ctest --test-dir build --output-on-failure
+      - name: Sanitizer build and tests
+        run: |
+          cmake -S . -B build-sanitize -DCMAKE_C_FLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -O1'
+          cmake --build build-sanitize --parallel 2
+          ASAN_OPTIONS=detect_leaks=1 ctest --test-dir build-sanitize --output-on-failure
+      - name: CLI truth smoke test
+        run: ./build/sky_webhook_plan_cli | grep -q 'network_delivery=false'
+      - name: Build image
+        run: docker build -t sky-webhook-plan:ci .
+      - name: Verify non-root image
+        run: test "$(docker image inspect sky-webhook-plan:ci --format '{{.Config.User}}')" != "" && test "$(docker image inspect sky-webhook-plan:ci --format '{{.Config.User}}')" != "root"
