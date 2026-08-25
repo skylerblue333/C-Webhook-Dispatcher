@@ -1,44 +1,41 @@
-<!-- PORTFOLIO PROJECT PROFILE: maintained by the repository owner -->
+# Sky Webhook Plan
 
-## Project profile and code-audit snapshot
+**Status: engineering beta.**
 
-**What this is:** **C-Webhook-Dispatcher** is a public repository described as: “Lightweight webhook dispatcher with retry logic in C. #SkyCoin4444 #AI #Blockchain #DevOps #Innovation” Its dominant language signals are **C (2 files)**.
+This repository's historical name is **C-Webhook-Dispatcher**, but the verified implementation is a dependency-free C11 **webhook delivery planning core**. It validates webhook delivery inputs and calculates a bounded deterministic retry schedule. It does **not** perform network delivery.
 
-**Why it has value:** Its value is best understood through the implementation evidence currently present in the repository: **16 tracked files** were observed in the shallow audit, with the source structure and existing documentation providing the project’s specific context. This README does not treat a prototype, experiment, or archive as a production system without supporting evidence.
+## Implemented
 
-**Implementation evidence:** 1 test-related file(s) detected; 1 dependency or package manifest(s) detected; 2 build/CI/infrastructure signal(s) detected; and 3 documentation or governance file(s) detected. Test filenames observed include `tests/test_main.c`. Dependency or package files include `package.json`. Build, CI, or infrastructure signals include `Dockerfile`, `.github/workflows/ci.yml`.
+- HTTPS-only endpoint validation with a 2,048-character bound
+- bounded event names using alphanumeric, `.`, `_`, and `-`
+- bounded non-empty payloads up to 4 KiB
+- retry policies limited to 1–8 attempts
+- base delays limited to 100–60,000 ms
+- deterministic exponential retry delays capped at 300,000 ms
+- reusable static C library and small CLI demonstration
+- strict compiler warnings-as-errors
+- deterministic CTest coverage
+- AddressSanitizer/UndefinedBehaviorSanitizer verification
+- non-root container packaging
+- CLI truth signal: `network_delivery=false`
 
-**Current status:** The repository is tracked on the `main` branch. The existing source tree, configuration, tests, workflows, and documentation remain authoritative for supported behavior and maturity. A code audit is not a production-readiness certification, and the presence of a test or workflow file does not establish that all checks pass.
+## Build and verify
 
-**Relationship to the wider portfolio:** This repository is one focused component of the broader Skyler Blue Spillers portfolio across AI, software engineering, cloud and DevOps, cybersecurity, blockchain, finance, education, social systems, and creative work. It may provide a service boundary, implementation pattern, experiment, archive, or reusable idea for related repositories. Treat repositories as technical dependencies only where documented interfaces and verified project requirements support that relationship.
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+ctest --test-dir build --output-on-failure
+./build/sky_webhook_plan_cli
+```
 
-**Quality and security note:** No obvious secret-like pattern was detected by the limited static scan; this is not a substitute for a security audit. No TODO/FIXME marker was detected in the scanned text files.
+The CLI prints a sample delivery plan. It deliberately states that network delivery was not performed.
 
----
+## SKYCOIN4444 integration
 
-# C Webhook Dispatcher
+Use this library as a validation/retry-policy boundary in front of a separately implemented webhook transport. A real dispatcher should independently enforce DNS/IP allow-lists, SSRF protections, TLS verification, authentication/signatures, connection and total timeouts, response-size limits, delivery idempotency, durable retry state, observability, and tenant controls.
 
-![GitHub stars](https://img.shields.io/github/stars/skylerblue333/C-Webhook-Dispatcher?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/skylerblue333/C-Webhook-Dispatcher?style=flat-square)
+## Scope limitations
 
-## 🌟 Overview
-**C-Webhook-Dispatcher** is a professional-grade project within the **SkyCoin4444** ecosystem. It focuses on delivering high-value solutions in the domain of **Software Development**.
+This component does not resolve DNS, open sockets, send HTTP requests, sign payloads, persist retry state, process response codes, provide durable queues, isolate tenants, deliver alerts, guarantee exactly-once semantics, provide HA, or prove production deployment.
 
-## 🚀 Key Features
-- **Scalable Architecture**: Designed for enterprise-level growth and performance.
-- **Modern Standards**: Implements best practices for clean code and maintainability.
-- **Robust Integration**: Built to work seamlessly within modern cloud-native environments.
-
-## 🛠️ Technology Stack
-- **Primary Domain**: Software Development
-- **Ecosystem**: SkyCoin4444 Digital Platform
-
-## 📂 Structure
-The project is organized into a modular structure to ensure clarity and ease of development.
-
-## 👨‍💻 Author
-**Skyler Blue Spillers**
-*Professional Chess Player & Software Engineer*
-
----
-*Powered by SkyCoin4444*
+See `SECURITY.md` for security boundaries.

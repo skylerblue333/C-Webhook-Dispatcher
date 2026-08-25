@@ -1,40 +1,29 @@
+#include "webhook_plan.h"
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#define MAX_ITEMS 1024
+int main(void) {
+    sky_webhook_plan plan;
+    const sky_webhook_result result = sky_webhook_plan_init(
+        &plan,
+        "https://hooks.example.test/events",
+        "order.created",
+        "{\"orderId\":\"demo-1\"}",
+        5U,
+        500U
+    );
+    unsigned int attempt;
 
-typedef struct {
-    char key[64];
-    int value;
-} Item;
-
-Item store[MAX_ITEMS];
-int store_size = 0;
-
-int add_item(const char* key, int value) {
-    if (store_size >= MAX_ITEMS) return -1;
-    strncpy(store[store_size].key, key, 63);
-    store[store_size].value = value;
-    store_size++;
-    return store_size - 1;
-}
-
-int find_item(const char* key) {
-    for (int i = 0; i < store_size; i++) {
-        if (strcmp(store[i].key, key) == 0) return store[i].value;
+    if (result != SKY_WEBHOOK_OK) {
+        fprintf(stderr, "plan error: %s\n", sky_webhook_result_string(result));
+        return 1;
     }
-    return -1;
-}
 
-int main() {
-    add_item("alpha", 100);
-    add_item("beta", 200);
-    add_item("gamma", 300);
-    
-    printf("C-Webhook-Dispatcher store initialized with %d items\n", store_size);
-    printf("alpha = %d\n", find_item("alpha"));
-    printf("beta = %d\n", find_item("beta"));
-    printf("gamma = %d\n", find_item("gamma"));
+    printf("webhook delivery plan: event=%s payload_bytes=%zu attempts=%u network_delivery=false\n",
+           plan.event, plan.payload_len, plan.max_attempts);
+    for (attempt = 0U; attempt < plan.max_attempts; ++attempt) {
+        printf("attempt=%u delay_ms=%u\n", attempt + 1U,
+               sky_webhook_retry_delay_ms(&plan, attempt));
+    }
     return 0;
 }
